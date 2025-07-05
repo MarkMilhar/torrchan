@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Key Derivation Tool</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom CSS for better aesthetics and responsiveness */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f0f4f8; /* Light gray background */
+            color: #333; /* Dark gray text */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better content flow on smaller screens */
+            min-height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 1rem; /* Rounded corners for the main container */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            max-width: 900px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr; /* Single column on small screens */
+            gap: 2rem;
+        }
+        /* Two columns layout for medium and larger screens */
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .form-section, .results-section {
+            padding: 1rem;
+            border: 1px solid #e2e8f0; /* Light border */
+            border-radius: 0.75rem; /* Rounded corners for sections */
+            background-color: #fdfefe; /* Slightly off-white background for sections */
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #4a5568; /* Darker gray for labels */
+        }
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1.25rem;
+            border: 1px solid #cbd5e0; /* Light border for inputs */
+            border-radius: 0.5rem; /* Rounded corners for inputs */
+            font-size: 1rem;
+            color: #2d3748; /* Dark text for inputs */
+            background-color: #edf2f7; /* Light background for inputs */
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="password"]:focus,
+        textarea:focus {
+            border-color: #63b3ed; /* Blue border on focus */
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5); /* Blue glow on focus */
+            outline: none;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 0.85rem 1.5rem;
+            background: linear-gradient(145deg, #4299e1, #3182ce); /* Blue gradient button */
+            color: white;
+            font-weight: bold;
+            border: none;
+            border-radius: 0.75rem; /* Rounded corners for button */
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: background 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Soft shadow for button */
+        }
+        button:hover {
+            background: linear-gradient(145deg, #3182ce, #4299e1); /* Reverse gradient on hover */
+            transform: translateY(-2px); /* Slight lift effect on hover */
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+        }
+        button:active {
+            transform: translateY(0); /* Press effect */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Reduced shadow on active */
+        }
+        button:disabled {
+            background: #a0aec0; /* Gray out disabled button */
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+        pre {
+            background-color: #f7fafc; /* Light background for code blocks */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            white-space: pre-wrap; /* Preserve whitespace and wrap long lines */
+            word-break: break-all; /* Break long words */
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #2d3748;
+            overflow-x: auto; /* Allow horizontal scrolling if content is too wide */
+        }
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #2c5282; /* Darker blue for main headings */
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2c5282;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .message-box {
+            background-color: #fff3cd; /* Light yellow for warning */
+            color: #856404; /* Dark yellow text */
+            padding: 1rem;
+            border: 1px solid #ffeeba; /* Yellow border */
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: none; /* Hidden by default */
+        }
+        .message-box.show {
+            display: block; /* Show when 'show' class is added */
+        }
+        /* Loader animation */
+        .loader {
+            border: 4px solid #f3f3f3; /* Light gray border */
+            border-top: 4px solid #3498db; /* Blue top border for animation */
+            border-radius: 50%; /* Circular loader */
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite; /* Spin animation */
+            display: none;
+            margin: 0 auto; /* Center the loader */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .loader.show {
+            display: block; /* Show when 'show' class is added */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-section">
+            <h2 class="text-blue-700">Crypto Key Derivation</h2>
+            <!-- Message box for errors or warnings -->
+            <div id="messageBox" class="message-box rounded-lg shadow-sm"></div>
+            <form id="cryptoForm">
+                <label for="publicKey">Public Key:</label>
+                <textarea id="publicKey" name="publicKey" rows="6" class="rounded-lg shadow-sm" placeholder="Paste your SSH public key here (e.g., ssh-rsa AAAAB3NzaC...)" required></textarea>
+
+                <label for="issueNumber">Issue Number:</label>
+                <input type="number" id="issueNumber" name="issueNumber" class="rounded-lg shadow-sm" placeholder="e.g., 123" required min="0">
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" class="rounded-lg shadow-sm" placeholder="Enter a strong password" required>
+
+                <label for="root">Root (Optional Torrent Hash):</label>
+                <input type="text" id="root" name="root" class="rounded-lg shadow-sm" placeholder="Optional: Enter a torrent hash">
+
+                <button type="submit" class="rounded-lg shadow-md">Generate Keys</button>
+                <div id="loader" class="loader mt-4"></div>
+            </form>
+        </div>
+        <div class="results-section">
+            <h2 class="text-blue-700">Generated Results</h2>
+            <!-- Combined output for current and next issue data -->
+            <h3>Combined Issue Data:</h3>
+            <pre id="combinedOutput" class="rounded-lg shadow-inner"></pre>
+        </div>
+    </div>
+
+    <script type="module">
+        /**
+         * Helper function to convert a string to a Uint8Array (UTF-8 encoded).
+         * @param {string} str - The input string.
+         * @returns {Uint8Array} - The UTF-8 encoded byte array.
+         */
+        function stringToUint8Array(str) {
+            return new TextEncoder().encode(str);
+        }
+
+        /**
+         * Helper function to convert a Uint8Array to a hexadecimal string.
+         * @param {Uint8Array} arr - The input byte array.
+         * @returns {string} - The hexadecimal string representation.
+         */
+        function uint8ArrayToHex(arr) {
+            return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        /**
+         * Helper function to convert a hexadecimal string to a Uint8Array.
+         * @param {string} hex - The input hexadecimal string.
+         * @returns {Uint8Array} - The converted byte array.
+         */
+        function hexToUint8Array(hex) {
+            if (hex.length % 2 !== 0) {
+                console.error("Hex string must have an even number of characters.");
+                return new Uint8Array();
+            }
+            const arr = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < hex.length; i += 2) {
+                arr[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+            }
+            return arr;
+        }
+
+        /**
+         * Helper function to perform XOR operation on two Uint8Arrays of the same length.
+         * @param {Uint8Array} arr1 - The first byte array.
+         * @param {Uint8Array} arr2 - The second byte array.
+         * @returns {Uint8Array} - The result of the XOR operation.
+         * @throws {Error} If arrays have different lengths.
+         */
+        function xorUint8Arrays(arr1, arr2) {
+            if (arr1.length !== arr2.length) {
+                throw new Error("Uint8Arrays must have the same length for XOR operation.");
+            }
+            const result = new Uint8Array(arr1.length);
+            for (let i = 0; i < arr1.length; i++) {
+                result[i] = arr1[i] ^ arr2[i];
+            }
+            return result;
+        }
+
+        /**
+         * Asynchronous function to calculate SHA256 hash of given data.
+         * @param {Uint8Array} data - The data to hash.
+         * @returns {Promise<Uint8Array>} - A Promise that resolves with the SHA256 hash as a Uint8Array.
+         */
+        async function sha256(data) {
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            return new Uint8Array(hashBuffer);
+        }
+
+        /**
+         * Asynchronous function to derive a key using PBKDF2 (Password-Based Key Derivation Function 2).
+         * @param {Uint8Array} passwordUint8 - The password as a Uint8Array.
+         * @param {Uint8Array} saltUint8 - The salt as a Uint8Array.
+         * @param {number} iterations - The number of iterations to perform (higher is more secure).
+         * @param {number} keyLength - The desired length of the derived key in bytes (e.g., 32 for 256 bits).
+         * @returns {Promise<Uint8Array>} - A Promise that resolves with the derived key as a Uint8Array.
+         */
+        async function pbkdf2(passwordUint8, saltUint8, iterations, keyLength) {
+            // Import the password as a raw key for PBKDF2
+            const passwordKey = await crypto.subtle.importKey(
+                'raw',
+                passwordUint8,
+                { name: 'PBKDF2' },
+                false, // Not extractable
+                ['deriveBits'] // Can be used for deriving bits
+            );
+
+            // Derive the bits using PBKDF2
+            const derivedBits = await crypto.subtle.deriveBits(
+                {
+                    name: 'PBKDF2',
+                    salt: saltUint8,
+                    iterations: iterations,
+                    hash: 'SHA-256', // Hashing algorithm for PBKDF2
+                },
+                passwordKey,
+                keyLength * 8 // keyLength in bytes, deriveBits expects length in bits
+            );
+            return new Uint8Array(derivedBits);
+        }
+
+        /**
+         * Function to generate cryptographically secure random bytes.
+         * @param {number} length - The number of bytes to generate.
+         * @returns {Uint8Array} - A Uint8Array containing the random bytes.
+         */
+        function generateRandomBytes(length) {
+            const arr = new Uint8Array(length);
+            window.crypto.getRandomValues(arr); // Fill array with cryptographically strong random values
+            return arr;
+        }
+
+        // --- DOM Elements ---
+        const cryptoForm = document.getElementById('cryptoForm');
+        const publicKeyInput = document.getElementById('publicKey');
+        const issueNumberInput = document.getElementById('issueNumber');
+        const passwordInput = document.getElementById('password');
+        const rootInput = document.getElementById('root');
+        const combinedOutput = document.getElementById('combinedOutput'); // Changed from current/next
+        const messageBox = document.getElementById('messageBox');
+        const loader = document.getElementById('loader');
+        const submitButton = cryptoForm.querySelector('button[type="submit"]');
+
+        /**
+         * Displays a message in the message box.
+         * @param {string} message - The message to display.
+         * @param {'warning' | 'error'} type - The type of message (influences styling).
+         */
+        function showMessage(message, type = 'warning') {
+            messageBox.textContent = message;
+            messageBox.className = `message-box show`; // Add 'show' class to make it visible
+            if (type === 'error') {
+                messageBox.style.backgroundColor = '#f8d7da'; /* Light red */
+                messageBox.style.color = '#721c24'; /* Dark red text */
+                messageBox.style.borderColor = '#f5c6cb'; /* Red border */
+            } else { // default warning
+                messageBox.style.backgroundColor = '#fff3cd'; /* Light yellow */
+                messageBox.style.color = '#856404'; /* Dark yellow text */
+                messageBox.style.borderColor = '#ffeeba'; /* Yellow border */
+            }
+        }
+
+        /**
+         * Hides the message box.
+         */
+        function hideMessageBox() {
+            messageBox.classList.remove('show');
+            messageBox.textContent = '';
+        }
+
+        /**
+         * Main asynchronous function to process and generate cryptographic data for a given issue.
+         * @param {string} publicKey - The public key string.
+         * @param {number} issueNumber - The current issue number.
+         * @param {string} password - The password string.
+         * @param {boolean} includeCheckB - Whether to include CHECK_B in the final output.
+         * @returns {Promise<object>} - A Promise that resolves with an object containing the generated data.
+         * This object will always contain CHANNEL and TAG.
+         * @throws {Error} If any input is invalid or a cryptographic operation fails.
+         */
+        async function processIssueData(publicKey, issueNumber, password, includeCheckB = true) {
+            try {
+                // Input validation for issue number
+                if (isNaN(issueNumber) || issueNumber < 0) {
+                    throw new Error("Issue Number must be a non-negative integer.");
+                }
+
+                const publicKeyUint8 = stringToUint8Array(publicKey);
+                const passwordUint8 = stringToUint8Array(password);
+
+                // 1. Calculate SHA256 of the public key (CHANNEL)
+                const CHANNEL_uint8 = await sha256(publicKeyUint8);
+                const CHANNEL_hex = uint8ArrayToHex(CHANNEL_uint8);
+
+                // 2. Using strong KDF (PBKDF2), generate a pseudo-random key (TAG)
+                //    from CHANNEL, ISSUE, and PASSWORD.
+                //    The salt for PBKDF2 is constructed by concatenating CHANNEL bytes and issue number string bytes.
+                //    The password itself serves as the key material for PBKDF2.
+                const issueNumberStringUint8 = stringToUint8Array(String(issueNumber));
+                const saltUint8 = new Uint8Array(CHANNEL_uint8.length + issueNumberStringUint8.length);
+                saltUint8.set(CHANNEL_uint8, 0); // Add CHANNEL to the salt
+                saltUint8.set(issueNumberStringUint8, CHANNEL_uint8.length); // Add issue number string to the salt
+
+                // PBKDF2 parameters (recommended values for strong security)
+                const pbkdf2Iterations = 310000; // Increased iterations for stronger security
+                const pbkdf2KeyLength = 32;      // 256 bits for TAG
+
+                const TAG_uint8 = await pbkdf2(passwordUint8, saltUint8, pbkdf2Iterations, pbkdf2KeyLength);
+                const TAG_hex = uint8ArrayToHex(TAG_uint8);
+
+                // 3. Generate 2 256-bit random numbers CHECK_A, CHECK_B
+                const CHECK_A_uint8 = generateRandomBytes(32); // 32 bytes = 256 bits
+                const CHECK_B_uint8 = generateRandomBytes(32);
+                const CHECK_A_hex = uint8ArrayToHex(CHECK_A_uint8);
+                const CHECK_B_hex = uint8ArrayToHex(CHECK_B_uint8);
+
+                // 4. Calculate CHECK_C = SHA256(TAG ^ CHECK_A ^ CHECK_B)
+                // First XOR TAG with CHECK_A
+                const xor1 = xorUint8Arrays(TAG_uint8, CHECK_A_uint8);
+                // Then XOR the result with CHECK_B
+                const xor2 = xorUint8Arrays(xor1, CHECK_B_uint8);
+                // Finally, hash the result
+                const CHECK_C_uint8 = await sha256(xor2);
+                const CHECK_C_hex = uint8ArrayToHex(CHECK_C_uint8);
+
+                // Prepare the result object
+                const result = {
+                    CHANNEL: CHANNEL_hex,
+                    TAG: TAG_hex,
+                    CHECK_A: CHECK_A_hex,
+                    CHECK_C: CHECK_C_hex,
+                };
+
+                // Conditionally add CHECK_B based on the parameter
+                if (includeCheckB) {
+                    result.CHECK_B = CHECK_B_hex;
+                }
+
+                return result;
+
+            } catch (error) {
+                console.error("Error processing issue data:", error);
+                throw error; // Re-throw to be caught by the caller for display
+            }
+        }
+
+        /**
+         * Saves the current form input values to browser's local storage.
+         * Note: Storing passwords directly in local storage is generally not recommended for sensitive applications
+         * due to security implications. This is included per request.
+         */
+        function saveFormValues() {
+            localStorage.setItem('publicKey', publicKeyInput.value);
+            localStorage.setItem('issueNumber', issueNumberInput.value);
+            localStorage.setItem('password', passwordInput.value); // Storing password for session continuity as requested
+            localStorage.setItem('root', rootInput.value);
+        }
+
+        /**
+         * Loads form input values from browser's local storage on page load.
+         */
+        function loadFormValues() {
+            publicKeyInput.value = localStorage.getItem('publicKey') || '';
+            issueNumberInput.value = localStorage.getItem('issueNumber') || '';
+            passwordInput.value = localStorage.getItem('password') || '';
+            rootInput.value = localStorage.getItem('root') || '';
+        }
+
+        // --- Event Listener for Form Submission ---
+        cryptoForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent default form submission and page reload
+
+            hideMessageBox(); // Clear any previous messages
+            submitButton.disabled = true; // Disable button to prevent multiple submissions
+            loader.classList.add('show'); // Show loading spinner
+            combinedOutput.textContent = 'Calculating...'; // Provide immediate feedback
+
+            // Get trimmed values from form inputs
+            const publicKey = publicKeyInput.value.trim();
+            const issueNumber = parseInt(issueNumberInput.value, 10); // Parse issue number as integer
+            const password = passwordInput.value;
+            const root = rootInput.value.trim(); // Optional, not used in core calculations per spec
+
+            // Basic client-side validation
+            if (!publicKey) {
+                showMessage("Public Key is required.", "error");
+                submitButton.disabled = false;
+                loader.classList.remove('show');
+                combinedOutput.textContent = '';
+                return;
+            }
+            if (isNaN(issueNumber) || issueNumber < 0) {
+                showMessage("Issue Number must be a non-negative integer.", "error");
+                submitButton.disabled = false;
+                loader.classList.remove('show');
+                combinedOutput.textContent = '';
+                return;
+            }
+            if (!password) {
+                showMessage("Password is required.", "error");
+                submitButton.disabled = false;
+                loader.classList.remove('show');
+                combinedOutput.textContent = '';
+                return;
+            }
+
+            try {
+                // Save form values to local storage before processing
+                saveFormValues();
+
+                // Process for the current issue number
+                const currentData = await processIssueData(publicKey, issueNumber, password, true);
+                currentData.TORRENT_NAME = `${currentData.CHANNEL} ${currentData.TAG}`;
+
+                // Process for the next issue number (issue + 1), without CHECK_B
+                const nextData = await processIssueData(publicKey, issueNumber + 1, password, false);
+                nextData.TORRENT_NAME = `${nextData.CHANNEL} ${nextData.TAG}`;
+
+
+                // Combine outputs into a single JSON object
+                const combinedResult = {
+                    current: currentData,
+                    next: nextData
+                };
+
+                combinedOutput.textContent = JSON.stringify(combinedResult, null, 2); // Pretty print JSON
+
+            } catch (error) {
+                // Display any errors encountered during processing
+                showMessage(`Error: ${error.message}`, "error");
+                combinedOutput.textContent = ''; // Clear previous output
+                console.error("Submission error:", error); // Log detailed error to console
+            } finally {
+                submitButton.disabled = false; // Re-enable button
+                loader.classList.remove('show'); // Hide loading spinner
+            }
+        });
+
+        // --- Load values from local storage when the page fully loads ---
+        document.addEventListener('DOMContentLoaded', loadFormValues);
+    </script>
+</body>
+</html>
