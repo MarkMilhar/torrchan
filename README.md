@@ -1,5 +1,7 @@
 # torrchan
 Torrent search tag generation
+https://g.co/gemini/share/60ef901a8aaf
+
 
 **How to Use the Crypto Key Derivation Tool**
 
